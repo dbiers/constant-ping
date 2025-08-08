@@ -88,7 +88,7 @@ main() {
 
     # Is configuration target host set to 127.0.0.1?
     if [[ "${TARGET_HOST}" == "127.0.0.1" ]]; then
-        warn_msg "Target host is set to localhost.  Did you configure the target host in ${CONFIG_FILE}?"
+        error_msg "Target host is set to localhost.  Did you configure the target host in ${CONFIG_FILE}?"
     fi
 
     # Start the ping loop
@@ -96,7 +96,7 @@ main() {
 }
 
 # Arguments
-while getopts "h" opt; do
+while getopts "hidc:" opt; do
 case $opt in
     h)
         func_usage
