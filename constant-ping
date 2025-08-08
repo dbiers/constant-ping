@@ -21,6 +21,7 @@ After=network.target
 [Service]
 ExecStart=/usr/local/bin/constant-ping
 Restart=always
+RestartSec=5
 User=root
 
 [Install]
