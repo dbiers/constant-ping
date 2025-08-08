@@ -26,7 +26,7 @@ User=root
 [Install]
 WantedBy=multi-user.target"
 
-$CONFIG_TEMPLATE="# Configuration file for constant-ping
+CONFIG_TEMPLATE="# Configuration file for constant-ping
 ######################################
 # Target Host to Ping
 TARGET_HOST=\"127.0.0.1\"
