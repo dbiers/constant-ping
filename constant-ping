@@ -1,0 +1,126 @@
+#!/bin/bash
+# https://github.com/dbiers/constant-ping
+
+# Predefined Vars
+MY_BASE=$(basename $0)
+MY_DIR=$( readlink -f $(dirname $0) )
+
+# Predefined Informational Functions
+info_msg() { echo -e "[$(date +%Y-%m-%dT%H:%M:%S)] [INFO] $1"; }
+warn_msg() { echo -e "[$(date +%Y-%m-%dT%H:%M:%S)] [WARN] $1"; }
+error_msg() { echo -e "[$(date +%Y-%m-%dT%H:%M:%S)] [ERROR] $1"; exit 1; }
+
+# Default Vars
+CONFIG_FILE="/etc/constant-ping/main.conf"
+
+# Content for the systemd service file
+SYSTEMD_CONTENT="[Unit]
+Description=Constant Ping Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/constant-ping
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target"
+
+CONFIG_TEMPLATE="# Configuration file for constant-ping
+######################################
+# Target Host to Ping
+TARGET_HOST=\"127.0.0.1\"
+
+# Time Interval in seconds to ping
+PING_INTERVAL=5"
+
+func_usage() {
+    echo "Usage: ${MY_BASE} [options]"
+    echo "Options:"
+    echo "  -h  Show this help message"
+}
+
+func_install() {
+    # Exit on error
+    set -e
+
+    # Check if running as root for installation
+    if [[ $EUID -ne 0 ]]; then
+        error_msg "This script must be run as root to install constant-ping."
+    fi
+
+    # Start Installation
+    info_msg "Installing constant-ping..."
+
+    # Create the systemd service file
+    echo "${SYSTEMD_CONTENT}" > /etc/systemd/system/constant-ping.service
+    info_msg "Created systemd service file at /etc/systemd/system/constant-ping.service"
+
+    # Copy myself to /usr/local/bin
+    cp "${MY_DIR}/${MY_BASE}" /usr/local/bin/constant-ping
+
+    # Copy the configuration template
+    mkdir -p /etc/constant-ping
+    echo "${CONFIG_TEMPLATE}" > /etc/constant-ping/main.conf
+    info_msg "Created configuration file at /etc/constant-ping/main.conf"
+
+    # Reload systemd to recognize the new service
+    systemctl daemon-reload
+    info_msg "Reloaded systemd daemon"
+
+    # Enable and start the service
+    systemctl enable constant-ping.service
+    info_msg "Enabled constant-ping service"
+
+    info_msg "Installation complete."
+    info_msg "You need to go configure /etc/constant-ping/main.conf before starting the service."
+    exit 0
+}
+
+main() {
+    # Check if the configuration file exists
+    if [[ ! -f "${CONFIG_FILE}" ]]; then
+        error_msg "Configuration file not found at ${CONFIG_FILE}. Please run with -i to install."
+    fi
+
+    # Load configuration
+    source "${CONFIG_FILE}"
+
+    # Is configuration target host set to 127.0.0.1?
+    if [[ "${TARGET_HOST}" == "127.0.0.1" ]]; then
+        error_msg "Target host is set to localhost.  Did you configure the target host in ${CONFIG_FILE}?"
+    fi
+
+    # Start the ping loop
+    ping -i ${PING_INTERVAL} "${TARGET_HOST}"
+}
+
+# Arguments
+while getopts "hidc:" opt; do
+case $opt in
+    h)
+        func_usage
+        exit 0
+        ;;
+    i)
+        func_install
+        exit 0
+        ;;
+    d)
+        info_msg "Enabled Debug"
+        set -x
+        ;;
+    c)
+        CONFIG_FILE="${OPTARG}"
+        ;;
+    *)
+        echo "Invalid option: -${OPTARG}" >&2
+        exit 1
+        ;;
+    esac
+done
+
+# Run
+main
+exit 0
