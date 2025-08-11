@@ -36,9 +36,13 @@ TARGET_HOST=\"127.0.0.1\"
 PING_INTERVAL=5"
 
 func_usage() {
+    echo ""
     echo "Usage: ${MY_BASE} [options]"
     echo "Options:"
     echo "  -h  Show this help message"
+    echo "  -i  Install systemd Service"
+    echo "  -d  Turn on debug (set -x)"
+    echo ""
 }
 
 func_install() {
@@ -97,7 +101,7 @@ main() {
 }
 
 # Arguments
-while getopts "hidc:" opt; do
+while getopts "hid" opt; do
 case $opt in
     h)
         func_usage
@@ -110,9 +114,6 @@ case $opt in
     d)
         info_msg "Enabled Debug"
         set -x
-        ;;
-    c)
-        CONFIG_FILE="${OPTARG}"
         ;;
     *)
         echo "Invalid option: -${OPTARG}" >&2
